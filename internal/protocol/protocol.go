@@ -13,8 +13,9 @@ const (
 )
 
 type Command struct {
-	commandType CommandType
-	key         string
+	CommandType CommandType
+	Key         string
+	Value       []byte
 }
 
 func Parse(line string) Command {
@@ -26,12 +27,18 @@ func Parse(line string) Command {
 	// Parse key
 	key, next := parseKey(line, next)
 
-	// If SET command parse value
-
-	return Command{
-		commandType: command,
-		key:         key,
+	cmd := Command{
+		CommandType: command,
+		Key:         key,
 	}
+
+	// If SET command parse value
+	if command == Set {
+		value := parseValue(line, next)
+		cmd.Value = value
+	}
+
+	return cmd
 }
 
 // Returns the type of command and on what index it finished parsing.
@@ -39,25 +46,28 @@ func parseCommand(line string) (CommandType, int, error) {
 	var builder strings.Builder
 	index := 0
 
+	// Go up until character is not whitespace
+	for index < len(line) && line[index] == ' ' {
+		index++
+	}
+
+	// Write byte into string builder until whitespace
 	for i := 0; i < len(line); i++ {
+		index = i
 		char := line[i]
 		if char == ' ' {
-			index = i
+			index = i + 1
 			break
 		}
 
 		builder.WriteByte(char)
 	}
 
+	// Switch case matching input string with possible commands
 	commandType := Get
-
-	switch builder.String() {
-	case "get":
-		commandType = Get
+	switch strings.ToUpper(builder.String()) {
 	case "GET":
 		commandType = Get
-	case "set":
-		commandType = Set
 	case "SET":
 		commandType = Set
 	default:
@@ -72,6 +82,10 @@ func parseKey(line string, from int) (string, int) {
 	var builder strings.Builder
 	index := 0
 
+	for from < len(line) && line[from] == ' ' {
+		from++
+	}
+
 	for i := from; i < len(line); i++ {
 		char := line[i]
 		if char == ' ' {
@@ -82,5 +96,16 @@ func parseKey(line string, from int) (string, int) {
 
 		builder.WriteByte(char)
 	}
+
 	return builder.String(), index
+}
+
+// Returns the value in bytes.
+// Skips whitespaces at the start of given string
+func parseValue(line string, from int) []byte {
+	for from < len(line) && line[from] == ' ' {
+		from++
+	}
+
+	return []byte(line[from:])
 }

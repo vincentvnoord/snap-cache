@@ -38,6 +38,7 @@ func handleConnection(conn net.Conn) {
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
+			fmt.Printf("Error reading line from connection: %s\n", err)
 			return
 		}
 
