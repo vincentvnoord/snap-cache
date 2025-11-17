@@ -33,21 +33,16 @@ func main() {
 }
 
 func handleConnection(conn net.Conn, handler *handler.Handler) {
-	fmt.Println("Incoming connection:")
+	fmt.Println("Incoming connection:", conn.RemoteAddr().String())
 	defer conn.Close()
+
 	// Read incoming data
-	// Parse
 	reader := bufio.NewReader(conn)
 	for {
-		line, err := reader.ReadString('\n')
+		parsed, err := protocol.Parse(reader)
 		if err != nil {
-			fmt.Printf("Error reading line from connection: %s\n", err)
-			return
-		}
-
-		parsed, err := protocol.Parse(line)
-		if err != nil {
-			conn.Write([]byte("ERR: Malformed input\n"))
+			res := fmt.Sprintf("ERR: %s\n", err)
+			conn.Write([]byte(res))
 			continue
 		}
 

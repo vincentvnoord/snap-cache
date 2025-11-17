@@ -1,15 +1,18 @@
 package protocol
 
 import (
+	"bufio"
 	"errors"
+	"io"
+	"strconv"
 	"strings"
-	"unicode"
 )
 
 type CommandType int
 
 const (
-	Get CommandType = iota
+	Ping CommandType = iota
+	Get
 	Set
 )
 
@@ -19,92 +22,159 @@ type Command struct {
 	Value       []byte
 }
 
+func readLine(reader *bufio.Reader) ([]byte, error) {
+	var buf []byte
+
+	// Read until \r\n or error
+	for {
+		byte, err := reader.ReadByte()
+		if err != nil {
+			return nil, err
+		}
+
+		if byte == '\r' {
+			next, err := reader.ReadByte()
+			if err != nil {
+				return nil, err
+			}
+
+			// Finished reading line
+			if next == '\n' {
+				return buf, nil
+			}
+
+			buf = append(buf, byte, next)
+		}
+
+		buf = append(buf, byte)
+	}
+}
+
 // Parse interprets a single protocol line such as "GET x" or "SET x 10".
 // It returns a Command struct or a parse error if the input is malformed.
-func Parse(line string) (*Command, error) {
-	command, next, err := parseCommand(line)
+func Parse(reader *bufio.Reader) (*Command, error) {
+	// Return err if not valid command
+	cmdType, err := parseCommand(reader)
 	if err != nil {
-		// Return err
 		return nil, err
 	}
 
-	// Parse key
-	key, next := parseKey(line, next)
+	key, err := parseKey(reader)
+	if err != nil {
+		return nil, err
+	}
 
-	cmd := Command{
-		CommandType: command,
+	value := []byte{}
+	if cmdType == Set {
+		val, err := parseValue(reader)
+		value = val
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &Command{
+		CommandType: cmdType,
 		Key:         key,
-	}
-
-	// If SET command parse value
-	if command == Set {
-		value := parseValue(line, next)
-		cmd.Value = value
-	}
-
-	return &cmd, nil
+		Value:       value,
+	}, nil
 }
 
-// Returns the type of command and on what index it finished parsing.
-func parseCommand(line string) (CommandType, int, error) {
-	var builder strings.Builder
-	index := 0
-
-	// Write byte into string builder until whitespace
-	for i := 0; i < len(line); i++ {
-		index = i
-		char := line[i]
-		if char == ' ' {
-			index = i + 1
-			break
-		}
-
-		builder.WriteByte(char)
+// Returns the type of command.
+func parseCommand(reader *bufio.Reader) (CommandType, error) {
+	// Get byte length of first statement (command type)
+	buf, err := readLine(reader)
+	if err != nil {
+		return -1, err
 	}
 
+	if len(buf) < 1 || len(buf) > 2 {
+		return -1, errors.New("Invalid command length")
+	}
+
+	size, err := strconv.Atoi(string(buf))
+	if err != nil {
+		return -1, err
+	}
+
+	// Read command buffer size
+	cmdBuf := make([]byte, size)
+	_, err = io.ReadFull(reader, cmdBuf)
+	if err != nil {
+		return -1, err
+	}
+
+	cmdStr := string(cmdBuf)
+
 	// Switch case matching input string with possible commands
-	commandType := Get
-	switch strings.ToUpper(builder.String()) {
+	commandType := Ping
+	switch strings.ToUpper(cmdStr) {
+	case "PING":
+		commandType = Ping
 	case "GET":
 		commandType = Get
 	case "SET":
 		commandType = Set
 	default:
-		return 0, index, errors.New("Parsed line is not a valid command")
+		return 0, errors.New("Parsed line is not a valid command")
 	}
 
-	return commandType, index, nil
+	return commandType, nil
 }
 
 // Returns the key of the given line and on what index it finished parsing.
-func parseKey(line string, from int) (string, int) {
-	var builder strings.Builder
-	index := 0
-
-	for from < len(line) && unicode.IsSpace(rune(line[from])) {
-		from++
+func parseKey(reader *bufio.Reader) (string, error) {
+	// Get byte length of first statement (command type)
+	buf, err := readLine(reader)
+	if err != nil {
+		return "", err
 	}
 
-	for i := from; i < len(line); i++ {
-		char := line[i]
-		if unicode.IsSpace(rune(char)) {
-			// Pass it to the next char
-			index = i + 1
-			break
-		}
-
-		builder.WriteByte(char)
+	if len(buf) < 1 {
+		return "", errors.New("Invalid key length")
 	}
 
-	return builder.String(), index
+	size, err := strconv.Atoi(string(buf))
+	if err != nil {
+		return "", err
+	}
+
+	// Read command buffer size
+	keyBuf := make([]byte, size)
+	_, err = io.ReadFull(reader, keyBuf)
+	if err != nil {
+		return "", err
+	}
+
+	keyStr := string(keyBuf)
+
+	return keyStr, nil
 }
 
 // Returns the value in bytes.
 // Skips whitespaces at the start of given string
-func parseValue(line string, from int) []byte {
-	for from < len(line) && line[from] == ' ' {
-		from++
+func parseValue(reader *bufio.Reader) ([]byte, error) {
+	// Get byte length of first statement (command type)
+	buf, err := readLine(reader)
+	if err != nil {
+		return nil, err
 	}
 
-	return []byte(line[from:])
+	if len(buf) < 1 {
+		return nil, errors.New("Invalid key length")
+	}
+
+	size, err := strconv.Atoi(string(buf))
+	if err != nil {
+		return nil, err
+	}
+
+	// Read command buffer size
+	value := make([]byte, size)
+	_, err = io.ReadFull(reader, value)
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
 }

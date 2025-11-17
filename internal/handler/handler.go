@@ -11,6 +11,8 @@ type Handler struct {
 
 func (h *Handler) Exec(cmd *protocol.Command) []byte {
 	switch cmd.CommandType {
+	case protocol.Ping:
+		return []byte("PONG")
 	case protocol.Get:
 		val := h.Cache.Get(cmd.Key)
 		if val == nil {
