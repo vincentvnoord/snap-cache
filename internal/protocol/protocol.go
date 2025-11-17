@@ -3,6 +3,7 @@ package protocol
 import (
 	"errors"
 	"strings"
+	"unicode"
 )
 
 type CommandType int
@@ -18,10 +19,13 @@ type Command struct {
 	Value       []byte
 }
 
-func Parse(line string) Command {
+// Parse interprets a single protocol line such as "GET x" or "SET x 10".
+// It returns a Command struct or a parse error if the input is malformed.
+func Parse(line string) (*Command, error) {
 	command, next, err := parseCommand(line)
 	if err != nil {
 		// Return err
+		return nil, err
 	}
 
 	// Parse key
@@ -38,18 +42,13 @@ func Parse(line string) Command {
 		cmd.Value = value
 	}
 
-	return cmd
+	return &cmd, nil
 }
 
 // Returns the type of command and on what index it finished parsing.
 func parseCommand(line string) (CommandType, int, error) {
 	var builder strings.Builder
 	index := 0
-
-	// Go up until character is not whitespace
-	for index < len(line) && line[index] == ' ' {
-		index++
-	}
 
 	// Write byte into string builder until whitespace
 	for i := 0; i < len(line); i++ {
@@ -82,13 +81,13 @@ func parseKey(line string, from int) (string, int) {
 	var builder strings.Builder
 	index := 0
 
-	for from < len(line) && line[from] == ' ' {
+	for from < len(line) && unicode.IsSpace(rune(line[from])) {
 		from++
 	}
 
 	for i := from; i < len(line); i++ {
 		char := line[i]
-		if char == ' ' {
+		if unicode.IsSpace(rune(char)) {
 			// Pass it to the next char
 			index = i + 1
 			break

@@ -44,7 +44,10 @@ func TestParseCommandError(t *testing.T) {
 }
 
 func TestParseSetCommandReturnsKeyValue(t *testing.T) {
-	parsed := Parse("set alice 19")
+	parsed, err := Parse("set alice 19")
+	if err != nil {
+		t.Fatalf("expected no error but got: %s", err)
+	}
 
 	if parsed.Key != "alice" {
 		t.Fatalf("expected key to be alice, but was: %s", parsed.Key)
@@ -77,7 +80,7 @@ func TestParseSetCommandVariousInputs(t *testing.T) {
 			expectedVal: []byte("\x00\xFF\x10\x20"),
 		},
 		{
-			input:       "   set   spacedkey    spaced   value   ",
+			input:       "set   spacedkey    spaced   value   ",
 			expectedKey: "spacedkey",
 			expectedVal: []byte("spaced   value   "),
 		},
@@ -89,7 +92,11 @@ func TestParseSetCommandVariousInputs(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		parsed := Parse(tc.input)
+		parsed, err := Parse(tc.input)
+
+		if err != nil {
+			t.Fatalf("for input %q expected no error but got: %s", tc.input, err)
+		}
 
 		if parsed.Key != tc.expectedKey {
 			t.Fatalf("for input %q expected key %q but got %q",

@@ -1,4 +1,4 @@
-package store
+package cache
 
 import "sync"
 
@@ -27,8 +27,10 @@ func (store *Cache) Get(key string) *Entry {
 }
 
 // SET
-func (store *Cache) Set(key string, value *Entry) {
+func (store *Cache) Set(key string, value []byte) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
-	store.entries[key] = value
+	store.entries[key] = &Entry{
+		Value: value,
+	}
 }

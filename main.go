@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/vincentvnoord/internal/cache"
+	"github.com/vincentvnoord/internal/handler"
 	"github.com/vincentvnoord/internal/protocol"
 )
 
 func main() {
-	// cache := store.NewCache()
+	cache := cache.NewCache()
+	handler := &handler.Handler{Cache: cache}
 
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
@@ -25,11 +28,11 @@ func main() {
 			// handle error
 		}
 
-		go handleConnection(conn)
+		go handleConnection(conn, handler)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, handler *handler.Handler) {
 	fmt.Println("Incoming connection:")
 	defer conn.Close()
 	// Read incoming data
@@ -42,6 +45,21 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 
-		protocol.Parse(line)
+		parsed, err := protocol.Parse(line)
+		if err != nil {
+			conn.Write([]byte("ERR: Malformed input\n"))
+			continue
+		}
+
+		res := handler.Exec(parsed)
+		fmt.Printf("Exec returned: %#v\n", res)
+
+		res = append(res, '\n')
+		n, err := conn.Write(res)
+		if err != nil {
+			fmt.Printf("Error writing bytes: %s", err)
+		}
+
+		fmt.Println("Bytes written:", n)
 	}
 }
