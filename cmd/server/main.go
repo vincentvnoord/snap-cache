@@ -14,7 +14,7 @@ func main() {
 	cache := cache.NewCache()
 	handler := &handler.Handler{Cache: cache}
 
-	ln, err := net.Listen("tcp", ":8080")
+	server, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -23,9 +23,10 @@ func main() {
 	fmt.Println("Now listening on port 8080")
 
 	for {
-		conn, err := ln.Accept()
+		conn, err := server.Accept()
 		if err != nil {
-			// handle error
+			fmt.Printf("Error accepting incoming connection: %s\n", err)
+			continue
 		}
 
 		go handleConnection(conn, handler)
@@ -36,9 +37,10 @@ func handleConnection(conn net.Conn, handler *handler.Handler) {
 	fmt.Println("Incoming connection:", conn.RemoteAddr().String())
 	defer conn.Close()
 
-	// Read incoming data
+	// Make new reader
 	reader := bufio.NewReader(conn)
 	for {
+		// Pass reader to parser
 		parsed, err := protocol.Parse(reader)
 		if err != nil {
 			res := fmt.Sprintf("ERR: %s\n", err)
@@ -46,9 +48,11 @@ func handleConnection(conn net.Conn, handler *handler.Handler) {
 			continue
 		}
 
+		// If parse succesful execute by handler
 		res := handler.Exec(parsed)
 		fmt.Printf("Exec returned: %#v\n", res)
 
+		// Write response
 		res = append(res, '\n')
 		n, err := conn.Write(res)
 		if err != nil {
