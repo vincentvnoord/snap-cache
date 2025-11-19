@@ -161,7 +161,7 @@ func parseValue(reader *bufio.Reader) ([]byte, error) {
 	}
 
 	if len(buf) < 1 {
-		return nil, errors.New("Invalid key length")
+		return nil, errors.New("Invalid value length")
 	}
 
 	size, err := strconv.Atoi(string(buf))
