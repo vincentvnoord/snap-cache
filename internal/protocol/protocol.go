@@ -22,7 +22,7 @@ type Command struct {
 	Value       []byte
 }
 
-func readLine(reader *bufio.Reader) ([]byte, error) {
+func ReadLine(reader *bufio.Reader) ([]byte, error) {
 	var buf []byte
 
 	// Read until \r\n or error
@@ -83,7 +83,7 @@ func Parse(reader *bufio.Reader) (*Command, error) {
 // Returns the type of command.
 func parseCommand(reader *bufio.Reader) (CommandType, error) {
 	// Get byte length of first statement (command type)
-	buf, err := readLine(reader)
+	buf, err := ReadLine(reader)
 	if err != nil {
 		return -1, err
 	}
@@ -125,7 +125,7 @@ func parseCommand(reader *bufio.Reader) (CommandType, error) {
 // Returns the key of the given line and on what index it finished parsing.
 func parseKey(reader *bufio.Reader) (string, error) {
 	// Get byte length of first statement (command type)
-	buf, err := readLine(reader)
+	buf, err := ReadLine(reader)
 	if err != nil {
 		return "", err
 	}
@@ -155,7 +155,7 @@ func parseKey(reader *bufio.Reader) (string, error) {
 // Skips whitespaces at the start of given string
 func parseValue(reader *bufio.Reader) ([]byte, error) {
 	// Get byte length of first statement (command type)
-	buf, err := readLine(reader)
+	buf, err := ReadLine(reader)
 	if err != nil {
 		return nil, err
 	}

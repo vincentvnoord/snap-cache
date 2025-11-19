@@ -3,8 +3,8 @@ package handler
 import (
 	"testing"
 
-	"github.com/vincentvnoord/internal/cache"
-	"github.com/vincentvnoord/internal/protocol"
+	"github.com/vincentvnoord/snap-cache/internal/cache"
+	"github.com/vincentvnoord/snap-cache/internal/protocol"
 )
 
 func TestExecSetGetReturnsBytes(t *testing.T) {

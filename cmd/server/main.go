@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/vincentvnoord/internal/cache"
-	"github.com/vincentvnoord/internal/handler"
-	"github.com/vincentvnoord/internal/protocol"
+	"github.com/vincentvnoord/snap-cache/internal/cache"
+	"github.com/vincentvnoord/snap-cache/internal/handler"
+	"github.com/vincentvnoord/snap-cache/internal/protocol"
 )
 
 func main() {
@@ -53,7 +53,6 @@ func handleConnection(conn net.Conn, handler *handler.Handler) {
 		fmt.Printf("Exec returned: %#v\n", res)
 
 		// Write response
-		res = append(res, '\n')
 		n, err := conn.Write(res)
 		if err != nil {
 			fmt.Printf("Error writing bytes: %s", err)

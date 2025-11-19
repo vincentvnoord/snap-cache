@@ -1,4 +1,4 @@
-module github.com/vincentvnoord
+module github.com/vincentvnoord/snap-cache
 
 go 1.25.4
 

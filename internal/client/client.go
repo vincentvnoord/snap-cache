@@ -1,13 +1,17 @@
 package client
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"net"
+
+	"github.com/vincentvnoord/snap-cache/internal/protocol"
 )
 
 type Client struct {
-	conn net.Conn
+	conn   net.Conn
+	reader *bufio.Reader
 }
 
 func NewClient(serverAddress string) (*Client, error) {
@@ -16,7 +20,15 @@ func NewClient(serverAddress string) (*Client, error) {
 		return nil, err
 	}
 
-	return &Client{conn}, nil
+	return &Client{
+		conn,
+		bufio.NewReader(conn),
+	}, nil
+}
+
+// Creator of client owns lifetime and has to call close
+func (c Client) Close() error {
+	return c.conn.Close()
 }
 
 func (c Client) SendCommand(command string, key string, value []byte) ([]byte, error) {
@@ -30,8 +42,12 @@ func (c Client) SendCommand(command string, key string, value []byte) ([]byte, e
 	}
 
 	// Read response until \r\n
+	res, err := protocol.ReadLine(c.reader)
+	if err != nil {
+		return nil, err
+	}
 
-	return []byte{}, nil
+	return res, nil
 }
 
 func encodeProtocol(command string, key string, value []byte) []byte {
