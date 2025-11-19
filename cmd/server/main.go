@@ -34,7 +34,6 @@ func main() {
 }
 
 func handleConnection(conn net.Conn, handler *handler.Handler) {
-	fmt.Println("Incoming connection:", conn.RemoteAddr().String())
 	defer conn.Close()
 
 	// Make new reader
@@ -50,14 +49,11 @@ func handleConnection(conn net.Conn, handler *handler.Handler) {
 
 		// If parse succesful execute by handler
 		res := handler.Exec(parsed)
-		fmt.Printf("Exec returned: %#v\n", res)
 
 		// Write response
-		n, err := conn.Write(res)
+		_, err = conn.Write(res)
 		if err != nil {
 			fmt.Printf("Error writing bytes: %s", err)
 		}
-
-		fmt.Println("Bytes written:", n)
 	}
 }

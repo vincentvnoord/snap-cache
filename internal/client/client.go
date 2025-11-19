@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"net"
+	"strconv"
 
 	"github.com/vincentvnoord/snap-cache/internal/protocol"
 )
@@ -42,7 +44,18 @@ func (c Client) SendCommand(command string, key string, value []byte) ([]byte, e
 	}
 
 	// Read response until \r\n
-	res, err := protocol.ReadLine(c.reader)
+	buf, err := protocol.ReadLine(c.reader)
+	if err != nil {
+		return nil, err
+	}
+
+	size, err := strconv.Atoi(string(buf))
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]byte, size)
+	_, err = io.ReadFull(c.reader, res)
 	if err != nil {
 		return nil, err
 	}
@@ -55,8 +68,11 @@ func encodeProtocol(command string, key string, value []byte) []byte {
 
 	out.WriteString(fmt.Sprintf("%d\r\n%s", len(command), command))
 	out.WriteString(fmt.Sprintf("%d\r\n%s", len(key), key))
-	out.WriteString(fmt.Sprintf("%d\r\n", len(value)))
-	out.Write(value)
+
+	if value != nil {
+		out.WriteString(fmt.Sprintf("%d\r\n", len(value)))
+		out.Write(value)
+	}
 
 	return out.Bytes()
 }

@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strconv"
+
 	"github.com/vincentvnoord/snap-cache/internal/cache"
 	"github.com/vincentvnoord/snap-cache/internal/protocol"
 )
@@ -21,14 +23,17 @@ func (h *Handler) Exec(cmd *protocol.Command) []byte {
 		}
 
 		valBytes := entry.Value
-		resp := make([]byte, 0, len(valBytes)+2)
-		resp = append(resp, valBytes...)
-		resp = append(resp, '\r', '\n')
+		sizeStr := strconv.Itoa(len(valBytes))
+		resp := make([]byte, 0, len(sizeStr)+2+len(valBytes))
+
+		resp = append(resp, sizeStr...)  // ASCII digits
+		resp = append(resp, '\r', '\n')  // CRLF
+		resp = append(resp, valBytes...) // byte data
 
 		return resp
 	case protocol.Set:
 		h.Cache.Set(cmd.Key, cmd.Value)
 	}
 
-	return []byte("OK\r\n")
+	return []byte("2\r\nOK")
 }
