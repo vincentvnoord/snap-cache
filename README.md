@@ -9,26 +9,29 @@ This also gave me a good chance to learn Go more deeply.
 ## Benchmark Results
 
 ### Direct Cache Usage Comparison
+When using the SnapCache package directly in Go (no TCP, no serialization, no syscalls), operations are extremely fast and limited only by CPU and Go runtime overhead.
 
-| Operation                     | Time (µs) | Notes                                  |
+| Operation                     | Time | Notes                                  |
 |--------------------------------|-----------|---------------------------------------|
-| Disk read (1MB file)           | 636       | Raw disk read                          |
-| SET (store 1 value)            | 1,178     | Includes network and server overhead   |
-| GET total (10,000 requests)    | 3,173,000 | End-to-end GETs from cache             |
-| GET average per request        | 317       | ~2× faster than reading from disk      |
+| Disk read (1MB file, 1 time)   | ~450 µs      | Raw disk read                          |
+| SET average                    | ~70 ns      | Direct memory read                  |
+| GET total (sum of 10,000 calls)       | ~300 µs    | GETs from direct cache             |
+| GET average                    | ~30 ns      | ~15,000× faster than reading from disk      |
 
+> These values represent pure in-memory access, not networked cache behavior.
+> This highlights the theoretical maximum speed of the cache layer.
 
 ### End-to-End Usage (Over TCP)
 
 | Operation                     | Time (µs) | Notes                                  |
 |--------------------------------|-----------|---------------------------------------|
-| Disk read (1MB file)           | 636       | Raw disk read                          |
-| SET (store 1 value)            | 1,178     | Includes network and server overhead   |
-| GET total (10,000 requests)    | 3,173,000 | End-to-end GETs from cache             |
-| GET average per request        | 317       | ~2× faster than reading from disk      |
+| Disk read (1MB file, 1 time)   | ~450      | Raw disk read                          |
+| SET (store 1 value)            | ~1,500     | Network + server + serialization  |
+| GET total (sum of 10,000 requests)    | ~4,000,000 | End-to-end GETs over network             |
+| GET average per request        | ~400       | ~1.12× faster than reading from disk      |
 
 > These results demonstrate the performance benefit of using SnapCache as a caching layer, even over TCP connections.
-> Usually, databases or blob storages are accessed over the network, making SnapCache even more advantageous.
+> In this test the server directly reads from its local file system, however, usually databases or blob storages are accessed over the network, making SnapCache even more advantageous.
 
 ---
 

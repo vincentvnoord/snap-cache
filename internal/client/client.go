@@ -16,6 +16,8 @@ type Client struct {
 	reader *bufio.Reader
 }
 
+// Usage: client, err := client.NewClient("localhost:8080")
+// Remember to call client.Close() when done calling commands
 func NewClient(serverAddress string) (*Client, error) {
 	conn, err := net.Dial("tcp", serverAddress)
 	if err != nil {
@@ -49,11 +51,13 @@ func (c Client) SendCommand(command string, key string, value []byte) ([]byte, e
 		return nil, err
 	}
 
+	// Response size
 	size, err := strconv.Atoi(string(buf))
 	if err != nil {
 		return nil, err
 	}
 
+	// Read response in buf with the size
 	res := make([]byte, size)
 	_, err = io.ReadFull(c.reader, res)
 	if err != nil {
