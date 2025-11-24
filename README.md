@@ -9,7 +9,7 @@ This also gave me a good chance to learn Go more deeply.
 ## Benchmark Results
 
 
-### End-to-End Usage Comparison (Over TCP)
+### End-to-End Usage Comparison (2000x speed increase!)
 The following benchmarks compare database operations with and without using SnapCache as a caching layer over TCP. The case involves a user and their orders, where we frequently need to fetch the sum of order amounts per user. The test (in /cmd/benchmark/database/main.go) simulates fetching this data 100,000 times, measuring the time taken for each operation.
 
 | Operation                     | Min Time     | Max Time      | Avg Time     | Total Time       | Notes                                |
