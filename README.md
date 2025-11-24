@@ -8,6 +8,20 @@ This also gave me a good chance to learn Go more deeply.
 
 ## Benchmark Results
 
+
+### End-to-End Usage Comparison (Over TCP)
+The following benchmarks compare database operations with and without using SnapCache as a caching layer over TCP. The case involves a user and their orders, where we frequently need to fetch the sum of order amounts per user. The test (in /cmd/benchmark/database/main.go) simulates fetching this data 100,000 times, measuring the time taken for each operation.
+
+| Operation                     | Min Time     | Max Time      | Avg Time     | Total Time       | Notes                                |
+|--------------------------------|-------------|---------------|-------------|-----------------|--------------------------------------|
+| DB: SELECT Username + ID       | 171.228µs   | 1.645545ms    | 219.593µs   | 2.195938s       | Simple select by ID                  |
+| DB: SELECT User order SUM      | 55.799ms    | 70.709ms      | 58.892ms    | 5.88925s        | Aggregation with join                |
+| CACHE: SET user order sum      | 19.26µs     | 2.985873ms    | 24.819µs    | 1.984978s       | Storing aggregated sums in cache     |
+| CACHE: GET user order sum      | 16.31µs     | 2.028561ms    | 24.886µs    | 1.990396s       | Fetching aggregated sums from cache  |
+| Fetched from DB / Cache        | 79,978      | —             | —           | —               | Number of records retrieved          |
+
+> Considering the average times, the cache layer is approximately 2,368× faster than fetching the aggregated sums directly from the database. This shows the significant performance improvement that caching can provide for read-heavy operations.
+
 ### Direct Cache Usage Comparison
 When using the SnapCache package directly in Go (no TCP, no serialization, no syscalls), operations are extremely fast and limited only by CPU and Go runtime overhead.
 
@@ -20,18 +34,6 @@ When using the SnapCache package directly in Go (no TCP, no serialization, no sy
 
 > These values represent pure in-memory access, not networked cache behavior.
 > This highlights the theoretical maximum speed of the cache layer.
-
-### End-to-End Usage (Over TCP)
-
-| Operation                     | Time (µs) | Notes                                  |
-|--------------------------------|-----------|---------------------------------------|
-| Disk read (1MB file, 1 time)   | ~450      | Raw disk read                          |
-| SET (store 1 value)            | ~1,500     | Network + server + serialization  |
-| GET total (sum of 10,000 requests)    | ~4,000,000 | End-to-end GETs over network             |
-| GET average per request        | ~400       | ~1.12× faster than reading from disk      |
-
-> These results demonstrate the performance benefit of using SnapCache as a caching layer, even over TCP connections.
-> In this test the server directly reads from its local file system, however, usually databases or blob storages are accessed over the network, making SnapCache even more advantageous.
 
 ---
 
