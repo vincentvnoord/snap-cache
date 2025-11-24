@@ -49,28 +49,18 @@ When using the SnapCache package directly in Go (no TCP, no serialization, no sy
 - **Supported commands**:
   - `SET key value` — Store a value in the cache.
   - `GET key` — Retrieve a value from the cache.
-  - `DELETE key` — Remove a key/value pair.
   - `PING` — Health check; responds with `PONG`.
 - **In-memory storage** using Go maps.
 - **Concurrency-safe** with mutexes to protect shared data.
-- **Simple logging** of connections, commands, and errors.
 
 ---
 
 ## Optional Enhancements (Future Work)
 
+- `DELETE key` — Remove a key/value pair.
 - TTL / key expiration with lazy deletion.
 - Append-only file (AOF) persistence for durability.
 - Command pipelining to reduce round-trip latency.
 - Pub/Sub messaging system.
 - Stats command: report total commands, memory usage, connected clients.
-
----
-
-## Getting Started
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/snapcache.git
-   cd snapcache
-
+- Simple logging of connections, commands, and errors.
