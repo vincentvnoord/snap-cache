@@ -7,10 +7,17 @@ This also gave me a good chance to learn Go more deeply.
 ---
 
 ## Benchmark Results
-
+All these benchmarks were run on my machine with an AMD Ryzen 9 5900X 12 cores / 24 threads and 16GB of RAM, using Go 1.25.
 
 ### End-to-End Usage Comparison (2000x speed increase!)
 The following benchmarks compare database operations with and without using SnapCache as a caching layer over TCP. The case involves a user and their orders, where we frequently need to fetch the sum of order amounts per user. The test (in /cmd/benchmark/database/main.go) simulates fetching this data 100,000 times, measuring the time taken for each operation.
+
+* Database: Postgresql.
+* Cache: SnapCache over TCP.
+* 100,000 users with 0-4 orders each (randomly generated).
+* Each user order sum is cached after all the orders are summed for the first time.
+* 79,978 order sums stored in cache total (some users did not have any orders).  
+
 
 | Operation                     | Min Time     | Max Time      | Avg Time     | Total Time       | Notes                                |
 |--------------------------------|-------------|---------------|-------------|-----------------|--------------------------------------|
@@ -18,7 +25,6 @@ The following benchmarks compare database operations with and without using Snap
 | DB: SELECT User order SUM      | 55.799ms    | 70.709ms      | 58.892ms    | 5.88925s        | Aggregation with join                |
 | CACHE: SET user order sum      | 19.26µs     | 2.985873ms    | 24.819µs    | 1.984978s       | Storing aggregated sums in cache     |
 | CACHE: GET user order sum      | 16.31µs     | 2.028561ms    | 24.886µs    | 1.990396s       | Fetching aggregated sums from cache  |
-| Fetched from DB / Cache        | 79,978      | —             | —           | —               | Number of records retrieved          |
 
 > Considering the average times, the cache layer is approximately 2,368× faster than fetching the aggregated sums directly from the database. This shows the significant performance improvement that caching can provide for read-heavy operations.
 
