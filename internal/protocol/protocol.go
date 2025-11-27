@@ -22,6 +22,7 @@ type Command struct {
 	Value       []byte
 }
 
+// Reads line until CRLF (\r\n) returns in bytes.
 func ReadLine(reader *bufio.Reader) ([]byte, error) {
 	var buf []byte
 
@@ -82,7 +83,7 @@ func Parse(reader *bufio.Reader) (*Command, error) {
 
 	value := []byte{}
 	if cmdType == Set {
-		val, err := parseValue(reader)
+		val, err := captureBytes(reader, 1, -1)
 		value = val
 		if err != nil {
 			return nil, err
@@ -98,26 +99,9 @@ func Parse(reader *bufio.Reader) (*Command, error) {
 
 // Returns the type of command from a reader (first incoming bytes should be the command type).
 func parseCommand(reader *bufio.Reader) (CommandType, error) {
-	// Get byte length of first statement (command type)
-	buf, err := ReadLine(reader)
+	cmdBuf, err := captureBytes(reader, 1, 10)
 	if err != nil {
-		return -1, err
-	}
-
-	if len(buf) < 1 || len(buf) > 2 {
-		return -1, errors.New("Invalid command length")
-	}
-
-	size, err := strconv.Atoi(string(buf))
-	if err != nil {
-		return -1, err
-	}
-
-	// Read command buffer size
-	cmdBuf := make([]byte, size)
-	_, err = io.ReadFull(reader, cmdBuf)
-	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	cmdStr := string(cmdBuf)
@@ -138,46 +122,38 @@ func parseCommand(reader *bufio.Reader) (CommandType, error) {
 	return commandType, nil
 }
 
-// Returns the key of the given line and on what index it finished parsing.
+// Returns the key from reader.
 func parseKey(reader *bufio.Reader) (string, error) {
-	// Get byte length of first statement (command type)
-	buf, err := ReadLine(reader)
+	buf, err := captureBytes(reader, 1, -1)
 	if err != nil {
 		return "", err
 	}
 
-	if len(buf) < 1 {
-		return "", errors.New("Invalid key length")
-	}
-
-	size, err := strconv.Atoi(string(buf))
-	if err != nil {
-		return "", err
-	}
-
-	// Read command buffer size
-	keyBuf := make([]byte, size)
-	_, err = io.ReadFull(reader, keyBuf)
-	if err != nil {
-		return "", err
-	}
-
-	keyStr := string(keyBuf)
+	keyStr := string(buf)
 
 	return keyStr, nil
 }
 
-// Returns the value in bytes.
-// Skips whitespaces at the start of given string
-func parseValue(reader *bufio.Reader) ([]byte, error) {
-	// Get byte length of first statement (command type)
+// Captures bytes considering captured byte length in first bytes
+//
+// Example read input: "3\r\nGET"
+//
+// # This reads 3 bytes, parses into int and takes next set of bytes with length of 3, returning GET
+//
+// maxLen <= 0 disables the max constraint
+func captureBytes(reader *bufio.Reader, minLen int, maxLen int) ([]byte, error) {
+	// Read buffer that should be length of next bytes
 	buf, err := ReadLine(reader)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(buf) < 1 {
-		return nil, errors.New("Invalid value length")
+	if len(buf) < minLen {
+		return nil, errors.New("Byte length too short")
+	}
+
+	if maxLen > 0 && len(buf) > maxLen {
+		return nil, errors.New("Byte length too long")
 	}
 
 	size, err := strconv.Atoi(string(buf))
