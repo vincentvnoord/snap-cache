@@ -50,8 +50,24 @@ func ReadLine(reader *bufio.Reader) ([]byte, error) {
 	}
 }
 
-// Parse interprets a single protocol line such as "GET x" or "SET x 10".
-// It returns a Command struct or a parse error if the input is malformed.
+// Parse reads bytes from the provided bufio.Reader and parses them into a Command.
+//
+// The reader should contain bytes in the protocol format expected by this server,
+// e.g., a command type, key, and optional value, properly encoded with line endings(\r\n).
+// Parse will read until a full command is received or return an error if the input
+// is malformed or incomplete.
+//
+// Returns a pointer to a Command struct representing the parsed command,
+// or an error if parsing fails.
+//
+// Example usage:
+//
+//	reader := bufio.NewReader(conn)
+//	cmd, err := Parse(reader)
+//	if err != nil {
+//		// handle error
+//	}
+//	fmt.Println("Command type:", cmd.CommandType)
 func Parse(reader *bufio.Reader) (*Command, error) {
 	// Return err if not valid command
 	cmdType, err := parseCommand(reader)
@@ -80,7 +96,7 @@ func Parse(reader *bufio.Reader) (*Command, error) {
 	}, nil
 }
 
-// Returns the type of command.
+// Returns the type of command from a reader (first incoming bytes should be the command type).
 func parseCommand(reader *bufio.Reader) (CommandType, error) {
 	// Get byte length of first statement (command type)
 	buf, err := ReadLine(reader)
