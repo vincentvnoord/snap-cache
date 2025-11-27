@@ -22,7 +22,7 @@ func TestExecSetGetReturnsBytes(t *testing.T) {
 	cmd.CommandType = protocol.Get
 	bytes := handler.Exec(cmd)
 
-	if string(bytes) != "value" {
-		t.Fatalf("expected resulting bytes to be \"value\", but was: %s", bytes)
+	if string(bytes) != "5\r\nvalue" {
+		t.Fatalf("expected resulting bytes to be \"5\", but was: %s", bytes)
 	}
 }
