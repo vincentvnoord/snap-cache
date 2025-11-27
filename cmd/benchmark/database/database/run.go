@@ -1,4 +1,4 @@
-package main
+package database
 
 import (
 	"context"
@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/vincentvnoord/snap-cache/cmd/benchmark/database/database"
 	"github.com/vincentvnoord/snap-cache/internal/client"
 )
 
-func main() {
+func Run() {
 	ctx := context.Background()
-	conn, err := database.ConnectDB(ctx)
+	conn, err := ConnectDB(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -21,13 +20,17 @@ func main() {
 
 	fmt.Println("Connected to DB successfully")
 
-	database.Seed(ctx, conn)
+	Seed(ctx, conn)
 
 	benchmarkSelect(conn, "SELECT * FROM users WHERE id = 12345", 10000)
 	dbSums := benchmarkUserOrdersSum(conn, "SELECT u.id, SUM(o.amount) FROM users u JOIN orders o ON u.id = o.user_id GROUP BY u.id;", 100)
 	fmt.Printf("Fetched %d order sums from database\n", len(dbSums))
 
 	client, err := client.NewClient("localhost:8080")
+	if err != nil {
+		panic(err)
+	}
+
 	defer client.Close()
 
 	benchmarkCacheSet(client, dbSums)
@@ -108,7 +111,7 @@ func benchmarkUserOrdersSum(conn *pgx.Conn, query string, iterations int) []User
 	min = time.Hour
 	results := make([]UserSum, 0)
 
-	for i := 0; i < iterations; i++ {
+	for range iterations {
 		results = results[:0] // reset results slice
 
 		start := time.Now()
@@ -145,7 +148,7 @@ func benchmarkSelect(conn *pgx.Conn, query string, iterations int) {
 	var min, max, total time.Duration
 	min = time.Hour
 
-	for i := 0; i < iterations; i++ {
+	for range iterations {
 		start := time.Now()
 		row := conn.QueryRow(context.Background(), query)
 		var id int

@@ -8,12 +8,10 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/jackc/pgx/v5"
-	_ "github.com/lib/pq"
-
-	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgx/v5"
+	_ "github.com/lib/pq"
 )
 
 func ConnectDB(ctx context.Context) (*pgx.Conn, error) {
@@ -41,27 +39,6 @@ func resetDB(ctx context.Context, conn *pgx.Conn) error {
 
 	_, err = conn.Exec(ctx, string(sqlBytes))
 	return err
-}
-
-func migrateDB(url string) error {
-	path, err := filepath.Abs("migrations")
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Resolved path:", path)
-
-	m, err := migrate.New("file://"+path, url)
-	if err != nil {
-		return err
-	}
-
-	err = m.Up() // Apply all migrations
-	if err != nil && err != migrate.ErrNoChange {
-		return err
-	}
-
-	return nil
 }
 
 func Seed(ctx context.Context, conn *pgx.Conn) {

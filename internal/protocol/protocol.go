@@ -53,8 +53,8 @@ func ReadLine(reader *bufio.Reader) ([]byte, error) {
 
 // Parse reads bytes from the provided bufio.Reader and parses them into a Command.
 //
-// The reader should contain bytes in the protocol format expected by this server,
-// e.g., a command type, key, and optional value, properly encoded with line endings(\r\n).
+// The reader should contain bytes in the protocol format expected by this server:
+// a command type, key, and optional value, properly encoded with line endings(\r\n).
 // Parse will read until a full command is received or return an error if the input
 // is malformed or incomplete.
 //
